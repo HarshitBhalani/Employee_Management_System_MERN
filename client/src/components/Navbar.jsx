@@ -2,23 +2,18 @@ import { NavLink } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <div>
-      <nav className="flex justify-between items-center mb-6">
-        <NavLink to="/">
-        <div  class="bg-sky-300 ...">
-          <img class="object-fill h-30 w-60 " src="https://i.ibb.co/0cMzXsp/png-clipart-human-resource-management-system-time-and-attendance-service-employees-international-uni.png" />
-        </div>
+    <header className="w-full bg-[#1e40af] shadow-md sticky top-0 z-50">
+      <nav className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center px-4 py-3 gap-2">
+        <NavLink to="/" className="text-2xl sm:text-3xl font-bold text-white tracking-tight hover:text-[#3b82f6] transition-colors">
+          Employee Management System
         </NavLink>
-
-
-        <h2 className="mb-2 mt-0 text-4xl font-medium leading-tight text-primary">
-          Employee Management System (CRUD MERN Full Stack)
-        </h2>
-
-        <NavLink className="inline-flex items-center justify-center whitespace-nowrap text-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-slate-100 h-9 rounded-md px-3" to="/create">
-          Create Employee
+        <NavLink
+          className="mt-2 sm:mt-0 inline-flex items-center justify-center whitespace-nowrap text-base font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b82f6] focus-visible:ring-offset-2 border border-white bg-[#1e40af] hover:bg-[#3b82f6] hover:text-white text-white h-10 rounded-lg px-5 shadow-sm"
+          to="/create"
+        >
+          + Create Employee
         </NavLink>
       </nav>
-    </div>
+    </header>
   );
 }

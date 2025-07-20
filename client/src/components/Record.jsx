@@ -3,11 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 
 export default function Record() {
   const [form, setForm] = useState({
-    name: "",
-    position: "",
-    level: "",
+    firstname: "",
+    lastname: "",
+    email: "",
+    contact: "",
+    designation: "",
+    salary: "",
   });
   const [isNew, setIsNew] = useState(true);
+  const [errors, setErrors] = useState({});
   const params = useParams();
   const navigate = useNavigate();
 
@@ -44,13 +48,30 @@ export default function Record() {
   }
 
   // This function will handle the submission.
+  function validate(form) {
+    const newErrors = {};
+    if (!form.firstname.trim()) newErrors.firstname = "First name is required.";
+    if (!form.lastname.trim()) newErrors.lastname = "Last name is required.";
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) newErrors.email = "Invalid email format.";
+    if (!form.contact.trim()) newErrors.contact = "Contact is required.";
+    else if (!/^[0-9]{10}$/.test(form.contact)) newErrors.contact = "Contact must be exactly 10 digits.";
+    if (!form.designation.trim()) newErrors.designation = "Designation is required.";
+    if (!form.salary.toString().trim()) newErrors.salary = "Salary is required.";
+    else if (isNaN(Number(form.salary)) || Number(form.salary) < 0) newErrors.salary = "Salary must be a valid number.";
+    else if (!/^\d{1,7}$/.test(form.salary.toString())) newErrors.salary = "Salary must be at most 7 digits.";
+    return newErrors;
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
+    const validationErrors = validate(form);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
     const person = { ...form };
     try {
       let response;
       if (isNew) {
-        // if we are adding a new record we will POST to /record.
         response = await fetch("http://localhost:5050/record", {
           method: "POST",
           headers: {
@@ -59,7 +80,6 @@ export default function Record() {
           body: JSON.stringify(person),
         });
       } else {
-        // if we are updating a record we will PATCH to /record/:id.
         response = await fetch(`http://localhost:5050/record/${params.id}`, {
           method: "PATCH",
           headers: {
@@ -68,14 +88,14 @@ export default function Record() {
           body: JSON.stringify(person),
         });
       }
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error('A problem occurred with your fetch operation: ', error);
     } finally {
-      setForm({ name: "", position: "", level: "" });
+      setForm({ firstname: "", lastname: "", email: "", contact: "", designation: "", salary: "" });
+      setErrors({});
       navigate("/");
     }
   }
@@ -83,126 +103,50 @@ export default function Record() {
   // This following section will display the form that takes the input from the user.
   return (
     <>
-      <h3 className="text-lg font-semibold p-4">Create/Update Employee Record</h3>
+      <h3 className="text-2xl font-bold p-4 text-[#1e293b] text-center">Create/Update Employee Record</h3>
       <form
         onSubmit={onSubmit}
-        className="border rounded-lg overflow-hidden p-4"
+        className="max-w-2xl mx-auto bg-[#ffffff] border border-[#e2e8f0] rounded-2xl shadow-lg p-6 md:p-10 flex flex-col gap-6"
+        noValidate
       >
-        <div className="grid grid-cols-1 gap-x-8 gap-y-10 border-b border-slate-900/10 pb-12 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-base font-semibold leading-7 text-slate-900">
-              Employee Info
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              This information will be displayed publicly so be careful what you
-              share.
-            </p>
+            <label htmlFor="firstname" className="block text-sm font-semibold text-[#1e293b] mb-1">First Name</label>
+            <input type="text" name="firstname" id="firstname" className={`w-full border ${errors.firstname ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="First Name" value={form.firstname} onChange={(e) => updateForm({ firstname: e.target.value })} />
+            {errors.firstname && <p className="text-xs text-red-500 mt-1">{errors.firstname}</p>}
           </div>
-
-          <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 ">
-            <div className="sm:col-span-4">
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium leading-6 text-slate-900"
-              >
-                Name
-              </label>
-              <div className="mt-2">
-                <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-slate-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md">
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
-                    placeholder="First Last"
-                    value={form.name}
-                    onChange={(e) => updateForm({ name: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="sm:col-span-4">
-              <label
-                htmlFor="position"
-                className="block text-sm font-medium leading-6 text-slate-900"
-              >
-                Position
-              </label>
-              <div className="mt-2">
-                <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-slate-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md">
-                  <input
-                    type="text"
-                    name="position"
-                    id="position"
-                    className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm sm:leading-6"
-                    placeholder="Developer Advocate"
-                    value={form.position}
-                    onChange={(e) => updateForm({ position: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <div>
-              <fieldset className="mt-4">
-                <legend className="sr-only">Position Options</legend>
-                <div className="space-y-4 sm:flex sm:items-center sm:space-x-10 sm:space-y-0">
-                  <div className="flex items-center">
-                    <input
-                      id="positionIntern"
-                      name="positionOptions"
-                      type="radio"
-                      value="Intern"
-                      className="h-4 w-4 border-slate-300 text-slate-600 focus:ring-slate-600 cursor-pointer"
-                      checked={form.level === "Intern"}
-                      onChange={(e) => updateForm({ level: e.target.value })}
-                    />
-                    <label
-                      htmlFor="positionIntern"
-                      className="ml-3 block text-sm font-medium leading-6 text-slate-900 mr-4"
-                    >
-                      Intern
-                    </label>
-                    <input
-                      id="positionJunior"
-                      name="positionOptions"
-                      type="radio"
-                      value="Junior"
-                      className="h-4 w-4 border-slate-300 text-slate-600 focus:ring-slate-600 cursor-pointer"
-                      checked={form.level === "Junior"}
-                      onChange={(e) => updateForm({ level: e.target.value })}
-                    />
-                    <label
-                      htmlFor="positionJunior"
-                      className="ml-3 block text-sm font-medium leading-6 text-slate-900 mr-4"
-                    >
-                      Junior
-                    </label>
-                    <input
-                      id="positionSenior"
-                      name="positionOptions"
-                      type="radio"
-                      value="Senior"
-                      className="h-4 w-4 border-slate-300 text-slate-600 focus:ring-slate-600 cursor-pointer"
-                      checked={form.level === "Senior"}
-                      onChange={(e) => updateForm({ level: e.target.value })}
-                    />
-                    <label
-                      htmlFor="positionSenior"
-                      className="ml-3 block text-sm font-medium leading-6 text-slate-900 mr-4"
-                    >
-                      Senior
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
-            </div>
+          <div>
+            <label htmlFor="lastname" className="block text-sm font-semibold text-[#1e293b] mb-1">Last Name</label>
+            <input type="text" name="lastname" id="lastname" className={`w-full border ${errors.lastname ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="Last Name" value={form.lastname} onChange={(e) => updateForm({ lastname: e.target.value })} />
+            {errors.lastname && <p className="text-xs text-red-500 mt-1">{errors.lastname}</p>}
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-[#1e293b] mb-1">Email</label>
+            <input type="email" name="email" id="email" className={`w-full border ${errors.email ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="Email" value={form.email} onChange={(e) => updateForm({ email: e.target.value })} />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+          </div>
+          <div>
+            <label htmlFor="contact" className="block text-sm font-semibold text-[#1e293b] mb-1">Contact</label>
+            <input type="text" name="contact" id="contact" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} className={`w-full border ${errors.contact ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="Contact" value={form.contact} onChange={(e) => updateForm({ contact: e.target.value.replace(/[^0-9]/g, '').slice(0,10) })} />
+            {errors.contact && <p className="text-xs text-red-500 mt-1">{errors.contact}</p>}
+          </div>
+          <div>
+            <label htmlFor="designation" className="block text-sm font-semibold text-[#1e293b] mb-1">Designation</label>
+            <input type="text" name="designation" id="designation" className={`w-full border ${errors.designation ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="Designation" value={form.designation} onChange={(e) => updateForm({ designation: e.target.value })} />
+            {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
+          </div>
+          <div>
+            <label htmlFor="salary" className="block text-sm font-semibold text-[#1e293b] mb-1">Salary</label>
+            <input type="number" name="salary" id="salary" className={`w-full border ${errors.salary ? 'border-red-400' : 'border-[#e2e8f0]'} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]`} placeholder="Salary" value={form.salary} onChange={(e) => updateForm({ salary: e.target.value.replace(/[^0-9]/g, '').slice(0,7) })} maxLength={7} />
+            {errors.salary && <p className="text-xs text-red-500 mt-1">{errors.salary}</p>}
           </div>
         </div>
-        <input
+        <button
           type="submit"
-          value="Save Employee Record"
-          className="inline-flex items-center justify-center whitespace-nowrap text-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-slate-100 hover:text-accent-foreground h-9 rounded-md px-3 cursor-pointer mt-4"
-        />
+          className="mt-6 w-full bg-[#1e40af] hover:bg-[#3b82f6] text-white font-semibold py-2 rounded-lg shadow-md transition-colors"
+        >
+          Save Employee Record
+        </button>
       </form>
     </>
   );

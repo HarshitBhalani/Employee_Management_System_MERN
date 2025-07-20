@@ -32,9 +32,12 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     let newDocument = {
-      name: req.body.name,
-      position: req.body.position,
-      level: req.body.level,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      email: req.body.email,
+      contact: req.body.contact,
+      designation: req.body.designation,
+      salary: req.body.salary,
     };
     let collection = await db.collection("records");
     let result = await collection.insertOne(newDocument);
@@ -51,12 +54,14 @@ router.patch("/:id", async (req, res) => {
     const query = { _id: new ObjectId(req.params.id) };
     const updates = {
       $set: {
-        name: req.body.name,
-        position: req.body.position,
-        level: req.body.level,
+        firstname: req.body.firstname,
+        lastname: req.body.lastname,
+        email: req.body.email,
+        contact: req.body.contact,
+        designation: req.body.designation,
+        salary: req.body.salary,
       },
     };
-
     let collection = await db.collection("records");
     let result = await collection.updateOne(query, updates);
     res.send(result).status(200);
@@ -78,6 +83,17 @@ router.delete("/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error deleting record");
+  }
+});
+
+// This section will help you delete multiple records where firstname does not exist
+router.delete("/", async (req, res) => {
+  try {
+    let result = await db.collection("records").deleteMany({ firstname: { $exists: false } });
+    res.send(result).status(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting records");
   }
 });
 
