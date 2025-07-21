@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+// dotenv and process.env are not available in the browser. Use Vite env or hardcode API URL if needed.
 
 const Record = (props) => (
   <tr className={"border-b transition-colors hover:bg-[#e2e8f0] " + (props.idx % 2 === 0 ? "bg-[#ffffff]" : "bg-[#f1f5f9]") }>
@@ -22,7 +23,9 @@ const Record = (props) => (
           color="red"
           type="button"
           onClick={() => {
-            props.deleteRecord(props.record._id);
+            if (window.confirm("Are you sure you want to delete this record?")) {
+              props.deleteRecord(props.record._id);
+            }
           }}
         >
           Delete
@@ -35,45 +38,35 @@ const Record = (props) => (
 export default function RecordList() {
   const [records, setRecords] = useState([]);
 
-  // This method fetches the records from the database.
+  // Fetch records from the database on mount
   useEffect(() => {
     async function getRecords() {
-      const response = await fetch(`http://localhost:5050/record/`);
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        console.error(message);
-        return;
+      try {
+        const response = await fetch(`http://localhost:5050/record/`);
+        if (!response.ok) {
+          const message = `An error occurred: ${response.statusText}`;
+          console.error(message);
+          setRecords([]);
+          return;
+        }
+        const data = await response.json();
+        setRecords(data);
+      } catch (error) {
+        console.error("Failed to fetch records:", error);
+        setRecords([]);
       }
-      const records = await response.json();
-      setRecords(records);
     }
     getRecords();
-    return;
-  }, [records.length]);
+  }, []);
 
-  // This method will delete a record
+  // Delete a record and update state
   async function deleteRecord(id) {
     await fetch(`http://localhost:5050/record/${id}`, {
       method: "DELETE",
     });
-    const newRecords = records.filter((el) => el._id !== id);
-    setRecords(newRecords);
+    setRecords((prev) => prev.filter((el) => el._id !== id));
   }
 
-  // This method will map out the records on the table
-  function recordList() {
-    return records.map((record) => {
-      return (
-        <Record
-          record={record}
-          deleteRecord={() => deleteRecord(record._id)}
-          key={record._id}
-        />
-      );
-    });
-  }
-
-  // This following section will display the table with the records of individuals.
   return (
     <>
       <h3 className="text-2xl font-bold p-4 text-[#1e40af] text-center">Employee Records</h3>
@@ -99,7 +92,7 @@ export default function RecordList() {
               records.map((record, idx) => (
                 <Record
                   record={record}
-                  deleteRecord={() => deleteRecord(record._id)}
+                  deleteRecord={deleteRecord}
                   key={record._id}
                   idx={idx}
                 />
