@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";  
 
 // Environment variable se API URL get karo
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD 
+    ? 'https://employee-management-system-mern-hazel.vercel.app/api' 
+    : 'http://localhost:5050/api');
 
 export default function Record() {
   const [form, setForm] = useState({
@@ -23,30 +26,26 @@ export default function Record() {
     async function fetchData() {
       const id = params.id?.toString() || undefined;
       if(!id) return;
-      
       setIsNew(false);
       setLoading(true);
       
       try {
         const response = await fetch(
-          `${API_BASE_URL}/record/${id}`,
+          `${API_BASE_URL}/record/${params.id.toString()}`,
           {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
             },
-            // CORS issues ke liye
-            mode: 'cors',
+            credentials: 'include', // CORS ke liye
           }
         );
         
         if (!response.ok) {
-          if (response.status === 404) {
-            console.warn(`Record with id ${id} not found`);
-            navigate("/");
-            return;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const message = `An error has occurred: ${response.statusText}`;
+          console.error(message);
+          return;
         }
         
         const record = await response.json();
@@ -58,13 +57,14 @@ export default function Record() {
         setForm(record);
       } catch (error) {
         console.error('Failed to fetch record:', error);
-        // Network error handle karo
-        alert('Failed to fetch record. Please check your connection.');
+        // CORS error handling
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          alert('Network error: Please check if the server is running and CORS is configured properly.');
+        }
       } finally {
         setLoading(false);
       }
     }
-    
     fetchData();
   }, [params.id, navigate]);
 
@@ -105,11 +105,12 @@ export default function Record() {
       const requestOptions = {
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
         },
-        mode: 'cors', // CORS ke liye
+        credentials: 'include', // CORS ke liye
         body: JSON.stringify(person),
       };
-      
+
       if (isNew) {
         response = await fetch(`${API_BASE_URL}/record`, {
           method: "POST",
@@ -121,50 +122,36 @@ export default function Record() {
           ...requestOptions,
         });
       }
-      
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const result = await response.json();
-      console.log('Record saved successfully:', result);
-      
       // Success message
+      console.log('Record saved successfully');
       alert('Record saved successfully!');
-      
-      // Form reset aur navigate
-      setForm({ 
-        firstname: "", 
-        lastname: "", 
-        email: "", 
-        contact: "", 
-        designation: "", 
-        salary: "" 
-      });
-      setErrors({});
-      navigate("/");
       
     } catch (error) {
       console.error('A problem occurred with your fetch operation: ', error);
       
-      // Better error handling
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        alert('Network error. Please check your internet connection and try again.');
-      } else if (error.message.includes('CORS')) {
-        alert('CORS error. Please check your backend configuration.');
+      // CORS specific error handling
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Network error: Please check if the server is running and CORS is configured properly.');
       } else {
-        alert(`Error saving record: ${error.message}`);
+        alert('Error saving record. Please try again.');
       }
+      return; // Don't navigate on error
     } finally {
       setLoading(false);
+      setForm({ firstname: "", lastname: "", email: "", contact: "", designation: "", salary: "" });
+      setErrors({});
+      navigate("/");
     }
   }
 
-  // Loading state show karo
-  if (loading && !isNew) {
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -174,7 +161,7 @@ export default function Record() {
   return (
     <>
       <h3 className="text-2xl font-bold p-4 text-[#1e293b] text-center">
-        {isNew ? 'Create Employee Record' : 'Update Employee Record'}
+        {isNew ? 'Create' : 'Update'} Employee Record
       </h3>
       <form
         onSubmit={onSubmit}
@@ -183,7 +170,9 @@ export default function Record() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="firstname" className="block text-sm font-semibold text-[#1e293b] mb-1">First Name</label>
+            <label htmlFor="firstname" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              First Name
+            </label>
             <input 
               type="text" 
               name="firstname" 
@@ -196,8 +185,11 @@ export default function Record() {
             />
             {errors.firstname && <p className="text-xs text-red-500 mt-1">{errors.firstname}</p>}
           </div>
+          
           <div>
-            <label htmlFor="lastname" className="block text-sm font-semibold text-[#1e293b] mb-1">Last Name</label>
+            <label htmlFor="lastname" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              Last Name
+            </label>
             <input 
               type="text" 
               name="lastname" 
@@ -210,8 +202,11 @@ export default function Record() {
             />
             {errors.lastname && <p className="text-xs text-red-500 mt-1">{errors.lastname}</p>}
           </div>
+          
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-[#1e293b] mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              Email
+            </label>
             <input 
               type="email" 
               name="email" 
@@ -224,8 +219,11 @@ export default function Record() {
             />
             {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
           </div>
+          
           <div>
-            <label htmlFor="contact" className="block text-sm font-semibold text-[#1e293b] mb-1">Contact</label>
+            <label htmlFor="contact" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              Contact
+            </label>
             <input 
               type="text" 
               name="contact" 
@@ -241,8 +239,11 @@ export default function Record() {
             />
             {errors.contact && <p className="text-xs text-red-500 mt-1">{errors.contact}</p>}
           </div>
+          
           <div>
-            <label htmlFor="designation" className="block text-sm font-semibold text-[#1e293b] mb-1">Designation</label>
+            <label htmlFor="designation" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              Designation
+            </label>
             <input 
               type="text" 
               name="designation" 
@@ -255,8 +256,11 @@ export default function Record() {
             />
             {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
           </div>
+          
           <div>
-            <label htmlFor="salary" className="block text-sm font-semibold text-[#1e293b] mb-1">Salary</label>
+            <label htmlFor="salary" className="block text-sm font-semibold text-[#1e293b] mb-1">
+              Salary
+            </label>
             <input 
               type="number" 
               name="salary" 
@@ -271,6 +275,7 @@ export default function Record() {
             {errors.salary && <p className="text-xs text-red-500 mt-1">{errors.salary}</p>}
           </div>
         </div>
+        
         <button
           type="submit"
           disabled={loading}
